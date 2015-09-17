@@ -1,5 +1,6 @@
 #!/bin/bash
 
+export APP_PLATFORM=android-14
 # based on http://trac.pjsip.org/repos/wiki/Getting-Started/Android
 if [ -z "$PJLIB_VERSION" ]
 then
@@ -19,7 +20,6 @@ OUTPUT_ARCHIVE="/tmp/pjsip.tar"
 LOG_DIR=/usr/src
 # Android-21 platform has significantly different libraries,
 # so it isn't compatible with older versions. Use android-20 to go arround this
-export APP_PLATFORM=android-19
 
 function die {
     echo "$@" 1>&2
