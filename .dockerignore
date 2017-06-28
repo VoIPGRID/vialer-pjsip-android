@@ -1,4 +1,4 @@
 Dockerfile
-android-ndk/
 pjsip.tar
 .git/
+webrtc-build-scripts/

@@ -1,22 +1,37 @@
 # README
 
 This repository allows you to build pjlib as a static library for android.
-Architectures armeabi, armeabi-v7a, x86, and mips are currently supported.
+
+Currently supported en build library for:
+
+| ABI  	        | SSL  	| OPUS 	|
+|---	        |---	|---	|
+| armeabi  	    |   X	|   X	|
+| armeabu-v7a  	|   X	|   X	|
+| arm64-v8a  	|   X	|   X	|
+| x86  	        |   X	|   X	|
+| x86_64  	    |   X	|   X	|
+| mips64  	    |   X	|   X	|
+
 
 ## How To
 
-Build the android-ndk docker image
+To build a clean library the following commands are needed
+    docker-compose build
+    docker-compose run pjsip
+Now you are in the docker container and now start with the following command
+    cd home
+    ./build.sh
 
-    docker build -t android-ndk:10 android-ndk/
+Go get cup of coffee because this is gonna take a while :)
 
-Then build the pjlib-android image
+After the build is complete there is a pjsip.aar file in the root directory.
 
-    docker build -t pjlib-android .
+To use the new compiled Android library in your project you must do the following.
+- Copy the aar file to the following directory in your android project.
+    app/libs
+- Open your build.gradle file in the app folder.
+- In the dependencies part add the following line.
+    compile(name: 'pjsip', ext: 'aar')
 
-Finally run the program:
-
-    docker run --rm pjlib-android > pjsip.tar
-
-And test the archive:
-
-    tar tvf pjsip.tar
+And now you Android application is ready to use PJSIP!
