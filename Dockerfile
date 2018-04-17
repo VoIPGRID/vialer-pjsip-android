@@ -4,9 +4,9 @@ MAINTAINER "hello@wearespindle.com"
 ENV DEBIAN_FRONTEND noninteractive
 ENV TERM='xterm-256color'
 
-# Install necessary packages 
+# Install necessary packages
 RUN apt-get update && \
-    apt-get install -yq curl swig bzip2 gcc g++ make unzip subversion file dos2unix perl-modules python
+    apt-get install -yq curl swig bzip2 gcc g++ make unzip subversion file dos2unix perl-modules python3 python
 
 RUN echo 'deb http://deb.debian.org/debian jessie-backports main' > /etc/apt/sources.list.d/jessie-backports.list
 
@@ -34,10 +34,15 @@ ENV SDK_MANAGER_URL https://dl.google.com/android/repository/sdk-tools-linux-385
 RUN curl $SDK_MANAGER_URL -o /opt/sdktools.zip
 RUN unzip /opt/sdktools.zip -d /opt
 
-ENV NDK_URL https://dl.google.com/android/repository/android-ndk-r14b-linux-x86_64.zip
-RUN curl $NDK_URL -o /opt/android-ndk-r14b.zip
-RUN unzip /opt/android-ndk-r14b.zip -d /opt
+# ENV NDK_URL https://dl.google.com/android/repository/android-ndk-r14b-linux-x86_64.zip
+# RUN curl $NDK_URL -o /opt/android-ndk-r14b.zip
+# RUN unzip /opt/android-ndk-r14b.zip -d /opt
 
+ENV NDK_URL http://dl.google.com/android/ndk/android-ndk-r10e-linux-x86_64.bin
+RUN curl $NDK_URL -o /opt/ndk.bin && \
+    chmod +x /opt/ndk.bin && \
+    cd /opt && ./ndk.bin && rm /opt/ndk.bin
 
 ENV PATH "$PATH:$ANDROID_HOME/ndk-bundle:$PATH"
-ENV ANDROID_NDK_ROOT="/opt/android-ndk-r14b"
+ENV ANDROID_NDK_ROOT /opt/android-ndk-r10e
+# ENV ANDROID_NDK_ROOT="/opt/android-ndk-r14b"

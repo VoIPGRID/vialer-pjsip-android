@@ -1,4 +1,4 @@
 pjsip:
   build: .
-  volumes: 
+  volumes:
     - ./:/home

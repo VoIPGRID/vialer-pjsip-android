@@ -22,8 +22,8 @@ AVAILABLE_ARCHS=(
     # "mips"
 )
 
-export APP_PLATFORM="android-21"
-export ANDROID_API=21
+export APP_PLATFORM="android-19"
+export ANDROID_API=19
 export GCC_VERSION="4.9"
 export AVAILABLE_ARCHS
 export USE_ARCHS=()
@@ -55,7 +55,7 @@ export OPUS_SRC_DIR="$OPUS_BUILD_DIR/src"
 export OPUS_OUTPUT_DIR="$BUILD_DIR/lib/opus"
 
 export SWIG_DIR="$BUILD_DIR/swig"
-export ACTIVE_NDK_VERSION="r14b"
+export ACTIVE_NDK_VERSION="r10e"
 export ANDROID_NDK_HOME="/opt/android-ndk-${ACTIVE_NDK_VERSION}/"
 export ANDROID_NDK_TOOLCHAIN_PATH="${ANDROID_NDK_HOME}ndk-toolchains"
 
@@ -68,8 +68,8 @@ function build_ssl() {
 
     rm -rf $ANDROID_NDK_TOOLCHAIN_PATH
     mkdir -p $ANDROID_NDK_TOOLCHAIN_PATH
-    
-    
+
+
     echo "Removing SSL output directory"
     rm -rf $SSL_OUTPUT_DIR
     mkdir -p $SSL_OUTPUT_DIR
@@ -77,7 +77,7 @@ function build_ssl() {
     pushd . > /dev/null
     cd $SSL_SRC_DIR
 
-    # ssl_version="openssl-1.0.2l";
+    # ssl_version="openssl-1.0.2o";
     ssl_version="openssl-1.1.0f";
 
     ssl_url="https://www.openssl.org/source/$ssl_version.tar.gz"
@@ -90,7 +90,7 @@ function build_ssl() {
 
     mkdir -p $SSL_LOGS_DIR
 
-    for ((i=0; i < ${#AVAILABLE_ARCHS[@]}; i++))   
+    for ((i=0; i < ${#AVAILABLE_ARCHS[@]}; i++))
     do
         ssl_arch="${SSL_ARCHS[i]}"
         android_arch="${AVAILABLE_ARCHS[i]}"
@@ -109,7 +109,7 @@ function build_ssl() {
         if [[ $ssl_version != openssl-1.1.* ]]; then
             if [[ $ssl_arch == "android-armeabi" ]]; then
                 ARCH="android-armv7"
-            elif [[ $ssl_arch == "android64" ]]; then 
+            elif [[ $ssl_arch == "android64" ]]; then
                 ARCH="linux-x86_64 shared no-ssl2 no-ssl3 no-hw "
             elif [[ "$ssl_arch" == "android64-aarch64" ]]; then
                 ARCH="android shared no-ssl2 no-ssl3 no-hw "
@@ -131,14 +131,15 @@ function build_ssl() {
                     no-dso
         PATH=$TOOLCHAIN_PATH:$PATH
 
-        make clean 
+        make clean
 
-        make depend 
+        make depend
         # if make -j4; then
         make
             # make install >> $arch_log 2>&1
-        make install_sw 
-        make install_ssldirs 
+        make install_sw
+        make install_ssldirs
+        # fi
 
         end=`date +%s`
         echo "End time of ssl $arch: $end"
@@ -146,59 +147,69 @@ function build_ssl() {
         echo "Total ssl compile time of $arch: $runtime"
         # fi
     done
-    
+
 }
 
 function configure_base_ssl_export() {
     ARCH=$1; OUT=$2; CLANG=${3:-""};
-    
+
     TOOLS_ROOT="$ANDROID_NDK_HOME/toolchains/"
 
     TOOLCHAIN_ROOT=${TOOLS_ROOT}/${OUT}-android-toolchain
 
+    echo $TOOLCHAIN_ROOT
     if [ "$ARCH" == "android" ]; then
         export ARCH_FLAGS="-mthumb"
         export ARCH_LINK=""
         export TOOL="arm-linux-androideabi"
         NDK_FLAGS="--arch=arm"
+        PLATFORM="android-19"
     elif [ "$ARCH" == "android-armeabi" ]; then
         export ARCH_FLAGS="-march=armv7-a -mfloat-abi=softfp -mfpu=vfpv3-d16 -mthumb -mfpu=neon"
         export ARCH_LINK="-march=armv7-a -Wl,--fix-cortex-a8"
         export TOOL="arm-linux-androideabi"
         NDK_FLAGS="--arch=arm"
+        PLATFORM="android-19"
     elif [ "$ARCH" == "android64-aarch64" ]; then
         export ARCH_FLAGS=""
         export ARCH_LINK=""
         export TOOL="aarch64-linux-android"
         NDK_FLAGS="--arch=arm64"
+        PLATFORM="android-21"
     elif [ "$ARCH" == "android-x86" ]; then
         export ARCH_FLAGS="-march=i686 -mtune=intel -msse3 -mfpmath=sse -m32"
         export ARCH_LINK=""
         export TOOL="i686-linux-android"
         NDK_FLAGS="--arch=x86"
+        PLATFORM="android-19"
     elif [ "$ARCH" == "android64" ]; then
         export ARCH_FLAGS="-march=x86-64 -msse4.2 -mpopcnt -m64 -mtune=intel"
         export ARCH_LINK=""
         export TOOL="x86_64-linux-android"
         NDK_FLAGS="--arch=x86_64"
+        PLATFORM="android-21"
     elif [ "$ARCH" == "android-mips" ]; then
         export ARCH_FLAGS=""
         export ARCH_LINK=""
         export TOOL="mipsel-linux-android"
         NDK_FLAGS="--arch=mips"
+        PLATFORM="android-19"
     elif [ "$ARCH" == "android-mips64" ]; then
         export ARCH="linux64-mips64"
         export ARCH_FLAGS=""
         export ARCH_LINK=""
         export TOOL="mips64el-linux-android"
         NDK_FLAGS="--arch=mips64"
+        PLATFORM="android-21"
     fi;
 
-    [ -d ${TOOLCHAIN_ROOT} ] || python $ANDROID_NDK_ROOT/build/tools/make_standalone_toolchain.py \
-                                        --api ${ANDROID_API} \
-                                        --stl libc++ \
-                                        --install-dir=${TOOLCHAIN_ROOT} \
-                                        $NDK_FLAGS
+    # python $ANDROID_NDK_ROOT/build/tools/make_standalone_toolchain.py \
+            # --api ${ANDROID_API} \
+    bash $ANDROID_NDK_ROOT/build/tools/make-standalone-toolchain.sh \
+        --platform=${PLATFORM} \
+        --stl=libc++ \
+        --install-dir=${TOOLCHAIN_ROOT} \
+        $NDK_FLAGS
 
     export TOOLCHAIN_PATH=${TOOLCHAIN_ROOT}/bin
     export NDK_TOOLCHAIN_BASENAME=${TOOLCHAIN_PATH}/${TOOL}
@@ -254,7 +265,7 @@ function build_opus() {
     cd $OPUS_SRC_DIR
 
     opus_version="1.1.4"
-    opus_url="http://downloads.xiph.org/releases/opus/opus-$opus_version.tar.gz"
+    opus_url="https://ftp.osuosl.org/pub/xiph/releases/opus/opus-$opus_version.tar.gz"
 
     curl -LO $opus_url
     echo "Using opus-${opus_version}.tar.gz"
@@ -337,9 +348,9 @@ function _______build_ssl2() {
     sed -i -e 's/_ANDROID_API="android-18"/_ANDROID_API="android-21"/g' "$SSL_BUILD_DIR/Setenv-android.sh"
     sed -i -e 's/_ANDROID_NDK="android-ndk-r9"/_ANDROID_NDK="android-ndk-r10e"/g' "$SSL_BUILD_DIR/Setenv-android.sh"
 
-    chmod a+x Setenv-android.sh  
+    chmod a+x Setenv-android.sh
     dos2unix Setenv-android.sh
-    set_ssl_env=". ./Setenv-android.sh" 
+    set_ssl_env=". ./Setenv-android.sh"
     $set_ssl_env
 
     ./config shared no-ssl3 no-comp no-hw no-engine --openssldir=$SSL_BUILD_DIR
@@ -357,7 +368,7 @@ function download_pjsip () {
         latest_pjsip_tag=$(svn ls "$PJSIP_BASE_URL/tags/" | tail -n 1  | cut -d "/" -f 1 | sort -t . -k 1,2n -k 2,2n -k 3,2)
         PJSIP_VERSION=$latest_pjsip_tag
     fi
-    
+
     checkout_url="${PJSIP_BASE_URL}/tags/${PJSIP_VERSION}"
     # checkout_url="${PJSIP_BASE_URL}/trunk"
 
@@ -432,9 +443,9 @@ function config_site () {
 
     echo "#define PJ_CONFIG_ANDROID 1" >> $PJSIP_CONFIG_SITE_H
     echo "#include <pj/config_site_sample.h>" >> $PJSIP_CONFIG_SITE_H
-    
+
     echo "#define PJMEDIA_SDP_NEG_ANSWER_SYMMETRIC_PT 0" >> $PJSIP_CONFIG_SITE_H
-    echo "#define PJMEDIA_HAS_OPUS_CODEC 1" >> $PJSIP_CONFIG_SITE_H
+    # echo "#define PJMEDIA_HAS_OPUS_CODEC 1" >> $PJSIP_CONFIG_SITE_H
     echo "#define PJMEDIA_AUDIO_DEV_HAS_OPENSL 1" >> $PJSIP_CONFIG_SITE_H
 
     while IFS=',' read -ra CONFIG_SITE_OPTION; do
@@ -466,15 +477,15 @@ function build_archs() {
         echo "Copying PJSUA.so for $tmp"
         ls $PJSIP_FINAL_LIB_DIR/$tmp
         mv "$PJSUA_GENERATED_SO_PATH" "$PJSIP_FINAL_LIB_DIR/$tmp"
-        
+
         echo "Copying PJSUA java bindings to final build directory..."
         cp -r $PJSUA_GENERATED_SRC_PATH $PJSIP_FINAL_JAVA_DIR
-        
+
         clean_pjsip_src
         download_pjsip
     done
 
-    
+
 
     echo "Done building the ABIs"
     echo "============================="
@@ -521,23 +532,24 @@ function _build() {
     echo "Building $arch"
     pushd . > /dev/null
     cd $PJSIP_SRC_DIR
-    
+
     mkdir -p $PJSIP_LOGS_DIR
     echo $PJSIP_LOGS_DIR
     arch_log="$PJSIP_LOGS_DIR/$arch.log"
     echo $arch
 
-    cp $PJSIP_CONFIG_SITE_H "$BASE_DIR/pjsip/src/pjlib/include/pj" 
-    configure="./configure-android $EXTRA_FLAGS --with-opus=$OPUS_OUTPUT_DIR/$arch --with-ssl=$SSL_OUTPUT_DIR/$arch"
+    cp $PJSIP_CONFIG_SITE_H "$BASE_DIR/pjsip/src/pjlib/include/pj"
+    # configure="./configure-android $EXTRA_FLAGS --with-opus=$OPUS_OUTPUT_DIR/$arch --with-ssl=$SSL_OUTPUT_DIR/$arch"
+    configure="./configure-android $EXTRA_FLAGS --with-ssl=$SSL_OUTPUT_DIR/$arch"
     # configure="./configure-android $EXTRA_FLAGS"
 
     echo $configure
     echo $arch
-    NDK_TOOLCHAIN_VERSION=4.9 TARGET_ABI=$arch $configure
+    NDK_TOOLCHAIN_VERSION=4.9 TARGET_ABI=$arch APP_PLATFORM=$APP_PLATFORM $configure
 
-    make dep 
-    make clean 
-    make 
+    make dep
+    make clean
+    make
 
     echo "Done building for $arch"
     echo "============================="
@@ -552,8 +564,8 @@ function _swig() {
 
     cd $PJSIP_SWIG_DIR
     arch_log="$PJSIP_LOGS_DIR/swig-$1.log"
-    make clean 
-    make 
+    make clean
+    make
 
     echo "DONE BUILDING SWIG"
 
@@ -569,7 +581,7 @@ function build_aar() {
     cd $BASE_DIR"/tmp"
 
     tar zxf "../android-library-template.tar.gz"
-    
+
     mkdir -p $PJSIP_FINAL_JAVA_DIR"/src/main/java/org/pjsip"
 
     echo $PJSIP_FINAL_JAVA_DIR"/main/java/org/pjsip"
@@ -579,14 +591,15 @@ function build_aar() {
     rm -rf "android-library-template/app/src/main/java/org/pjsip/pjsua2/app"
 
     ls -ls $PJSIP_FINAL_LIB_DIR"/."
-    cp -rf $PJSIP_FINAL_LIB_DIR"/." $BASE_DIR"/tmp/android-library-template/app/libs" 
+    cp -rf $PJSIP_FINAL_LIB_DIR"/." $BASE_DIR"/tmp/android-library-template/app/libs"
 
     mkdir -p $BASE_DIR"/tmp/android-library-template/app/src/main/jniLibs"
     cp -rf $PJSIP_FINAL_LIB_DIR"/." $BASE_DIR"/tmp/android-library-template/app/src/main/jniLibs"
 
     cd "$BASE_DIR/tmp/android-library-template"
 
-    sed -i -e 's/ndk.dir=\/Users\/redmerloen\/Library\/Android\/sdk\/ndk-bundle/ndk.dir=\/opt\/android-ndk-r14b/g' $BASE_DIR"/tmp/android-library-template/local.properties"
+    # sed -i -e 's/ndk.dir=\/Users\/redmerloen\/Library\/Android\/sdk\/ndk-bundle/ndk.dir=\/opt\/android-ndk-r14b/g' $BASE_DIR"/tmp/android-library-template/local.properties"
+    sed -i -e 's/ndk.dir=\/Users\/redmerloen\/Library\/Android\/sdk\/ndk-bundle/ndk.dir=\/opt\/android-ndk-r10e/g' $BASE_DIR"/tmp/android-library-template/local.properties"
     sed -i -e 's/sdk.dir=\/Users\/redmerloen\/Library\/Android\/sdk/sdk.dir=\/opt/g' $BASE_DIR"/tmp/android-library-template/local.properties"
 
     ./gradlew assembleRelease
@@ -601,12 +614,12 @@ if [ -z ${USE_ARCHS} ]; then
 fi
 
 start=`date +%s`
-# clean_pjsip_src
-# download_pjsip
+clean_pjsip_src
+download_pjsip
 full_clean_pjsip
 download_pjsip
 install_android_sdks
-build_opus
+# build_opus
 build_ssl
 config_site
 build_archs
