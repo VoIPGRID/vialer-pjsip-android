@@ -1,2 +1,4 @@
 pjsip.tar
 *~
+pjsip/
+tmp/
