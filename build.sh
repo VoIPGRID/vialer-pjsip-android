@@ -264,7 +264,7 @@ function build_opus() {
 
     cd $OPUS_SRC_DIR
 
-    opus_version="1.1.4"
+    opus_version="1.2.1"
     opus_url="https://ftp.osuosl.org/pub/xiph/releases/opus/opus-$opus_version.tar.gz"
 
     curl -LO $opus_url
@@ -274,20 +274,21 @@ function build_opus() {
 
     mkdir -p "$OPUS_SRC_DIR/jni"
 
-    cd $OPUS_SRC_DIR/jni
+    cd $OPUS_SRC_DIR
 
-    cp "$BASE_DIR/opus-2-android.mk" "Android.mk"
+    cp "$BASE_DIR/opus-android.mk" "jni/Android.mk"
+    cp "$BASE_DIR/opus-Application.mk" "jni/Application.mk"
 
     cd $OPUS_SRC_DIR
 
-    NDK_TOOLCHAIN_VERSION=4.9 $ANDROID_NDK_ROOT/ndk-build
+    NDK_TOOLCHAIN_VERSION=4.9 $ANDROID_NDK_ROOT/ndk-build NDK_APPLICATION_MK=jni/Application.mk APP_BUILD_SCRIPT=jni/Android.mk NDK_PROJECT_PATH=build NDK_DEBUG=1
 
     for arch in "${USE_ARCHS[@]}"; do
         mkdir -p "${OPUS_OUTPUT_DIR}/${arch}/include/opus"
         mkdir -p "${OPUS_OUTPUT_DIR}/${arch}/lib"
 
         cp -r "${OPUS_SRC_DIR}/include/." "${OPUS_OUTPUT_DIR}/${arch}/include/opus"
-        cp -r "${OPUS_SRC_DIR}/obj/local/${arch}/libopus.a" "${OPUS_OUTPUT_DIR}/${arch}/lib/libopus.a"
+        cp -r "${OPUS_SRC_DIR}/build/obj/local/${arch}/libopus.a" "${OPUS_OUTPUT_DIR}/${arch}/lib/libopus.a"
     done
 }
 
@@ -445,7 +446,7 @@ function config_site () {
     echo "#include <pj/config_site_sample.h>" >> $PJSIP_CONFIG_SITE_H
 
     echo "#define PJMEDIA_SDP_NEG_ANSWER_SYMMETRIC_PT 0" >> $PJSIP_CONFIG_SITE_H
-    # echo "#define PJMEDIA_HAS_OPUS_CODEC 1" >> $PJSIP_CONFIG_SITE_H
+    echo "#define PJMEDIA_HAS_OPUS_CODEC 1" >> $PJSIP_CONFIG_SITE_H
     echo "#define PJMEDIA_AUDIO_DEV_HAS_OPENSL 1" >> $PJSIP_CONFIG_SITE_H
 
     while IFS=',' read -ra CONFIG_SITE_OPTION; do
@@ -539,8 +540,7 @@ function _build() {
     echo $arch
 
     cp $PJSIP_CONFIG_SITE_H "$BASE_DIR/pjsip/src/pjlib/include/pj"
-    # configure="./configure-android $EXTRA_FLAGS --with-opus=$OPUS_OUTPUT_DIR/$arch --with-ssl=$SSL_OUTPUT_DIR/$arch"
-    configure="./configure-android $EXTRA_FLAGS --with-ssl=$SSL_OUTPUT_DIR/$arch"
+    configure="./configure-android $EXTRA_FLAGS --with-opus=$OPUS_OUTPUT_DIR/$arch --with-ssl=$SSL_OUTPUT_DIR/$arch"
     # configure="./configure-android $EXTRA_FLAGS"
 
     echo $configure
@@ -619,7 +619,7 @@ download_pjsip
 full_clean_pjsip
 download_pjsip
 install_android_sdks
-# build_opus
+build_opus
 build_ssl
 config_site
 build_archs
